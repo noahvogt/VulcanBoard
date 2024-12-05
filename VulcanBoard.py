@@ -68,20 +68,35 @@ class Config:
 
 @dataclass
 class ConfigLoader:
-    def __interpret_config(self, yaml_config) -> Config:
-        columns = yaml_config.get("columns")
-        rows = yaml_config.get("rows")
-        self.__validate_dimensions(columns, rows)
+    config_path: str
 
-        buttons = yaml_config.get("buttons")
-        self.__validate_buttons(buttons, rows, columns)
+    def __post_init__(  # pylint: disable=inconsistent-return-statements
+        self,
+    ) -> Config:
+        try:
+            with open(self.config_path, "r", encoding="utf-8") as config_reader:
+                yaml_config = yaml.safe_load(config_reader)
+                self.columns = yaml_config.get("columns")
+                self.rows = yaml_config.get("rows")
+                self.buttons = yaml_config.get("buttons")
+                return self.__interpret_config()
+        except (FileNotFoundError, PermissionError, IOError) as error:
+            error_msg(
+                f"Error: Could not access config file at {self.config_path}. Reason: {error}"
+            )
+        except yaml.YAMLError as error:
+            error_msg(f"Error parsing config file. Reason: {error}")
 
-        return Config(columns, rows, buttons)
+    def __interpret_config(self) -> Config:
+        self.__validate_dimensions()
+        self.__validate_buttons()
 
-    def __validate_buttons(self, buttons, rows, columns) -> None:
-        if not isinstance(buttons, list):
+        return Config(self.columns, self.rows, self.buttons)
+
+    def __validate_buttons(self) -> None:
+        if not isinstance(self.buttons, list):
             error_msg("invalid button config. needs to be a list of dicts.")
-        for button in buttons:
+        for button in self.buttons:
             if not isinstance(button, dict):
                 error_msg("invalid button config. needs to be a list of dicts.")
 
@@ -89,8 +104,8 @@ class ConfigLoader:
                 not isinstance(dimensions := button.get("button", ""), list)
                 or (not isinstance(dimensions[0], int))
                 or (not isinstance(dimensions[1], int))
-                or (0 > dimensions[0] or dimensions[0] > rows - 1)
-                or (0 > dimensions[1] or dimensions[1] > columns - 1)
+                or (0 > dimensions[0] or dimensions[0] > self.rows - 1)
+                or (0 > dimensions[1] or dimensions[1] > self.columns - 1)
             ):
                 error_msg(f"invalid button 'button' subentry: '{dimensions}'")
 
@@ -114,31 +129,15 @@ class ConfigLoader:
             ):
                 error_msg(f"invalid button 'fontsize' subentry: '{fontsize}'")
 
-    def __validate_dimensions(self, columns, rows) -> None:
-        for dimension in (columns, rows):
-            if not isinstance(dimension, int) and (dimension <= 0):
+    def __validate_dimensions(self) -> None:
+        for dimension in (self.columns, self.rows):
+            if not isinstance(dimension, int) or (dimension <= 0):
                 error_msg(f"invalid dimension: {dimension}")
-
-    def load_config(  # pylint: disable=inconsistent-return-statements
-        self,
-        config_file_path,
-    ) -> Config:
-        try:
-            with open(config_file_path, "r", encoding="utf-8") as config_reader:
-                read_config = yaml.safe_load(config_reader)
-                return self.__interpret_config(read_config)
-        except (FileNotFoundError, PermissionError, IOError) as error:
-            error_msg(
-                f"Error: Could not access config file at {config_file_path}. Reason: {error}"
-            )
-        except yaml.YAMLError as error:
-            error_msg(f"Error parsing config file. Reason: {error}")
 
 
 class VulcanBoardApp(App):
     def build(self) -> GridLayout:
-        config_loader = ConfigLoader()
-        config = config_loader.load_config(get_config_path())
+        config = ConfigLoader(get_config_path())
 
         button_map = {
             (btn["button"][0], btn["button"][1]): btn for btn in config.buttons
@@ -164,14 +163,9 @@ class VulcanBoardApp(App):
                         font_size=defined_button.get("fontsize", 14),
                         halign="center",
                         valign="middle",
-                        text_size=(
-                            None,
-                            None,
-                        ),  # Enable text alignment within button
                         background_normal="",
                     )
 
-                    # pylint: disable=no-member
                     cmd = defined_button.get("cmd", "")
                     # pylint: disable=no-member
                     btn.bind(  # pyright: ignore
