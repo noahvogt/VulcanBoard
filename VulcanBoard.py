@@ -101,13 +101,13 @@ class ConfigLoader:
                 error_msg("invalid button config. needs to be a list of dicts.")
 
             if (
-                not isinstance(dimensions := button.get("button", ""), list)
+                not isinstance(dimensions := button.get("position", ""), list)
                 or (not isinstance(dimensions[0], int))
                 or (not isinstance(dimensions[1], int))
                 or (0 > dimensions[0] or dimensions[0] > self.rows - 1)
                 or (0 > dimensions[1] or dimensions[1] > self.columns - 1)
             ):
-                error_msg(f"invalid button 'button' subentry: '{dimensions}'")
+                error_msg(f"invalid button 'position' subentry: '{dimensions}'")
 
             for entry in ("txt", "cmd"):
                 if not isinstance(result := button.get(entry, ""), str):
@@ -140,7 +140,8 @@ class VulcanBoardApp(App):
         config = ConfigLoader(get_config_path())
 
         button_map = {
-            (btn["button"][0], btn["button"][1]): btn for btn in config.buttons
+            (btn["position"][0], btn["position"][1]): btn
+            for btn in config.buttons
         }
 
         layout = GridLayout(

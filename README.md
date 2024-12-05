@@ -1,12 +1,17 @@
 # VulcanBoard
 
-a simple and stable hotkey program for desktop touchscreens.
+A hotkey board for desktop touchscreens.
 
 There are many hotkey solutions and programs like that use either
 - physical devices (Elgato StreamDeck) or
 - touchscreens (LioranBoard, MacroDeck, StreamPi)
 
-They are often very bloated but lack basic features like asynchronous command execution. They also crash way to often, so especially given their intended use for livestream production that greatly values stability, *VulcanBoard* aims to be a rock-solid alternative.
+They are often very bloated but lack basic features like
+- multitouch support on the desktop
+- asynchronous command execution
+- fullscreen mode
+
+They also crash way too often, so especially given their intended use for livestreaming production that greatly values stability, *VulcanBoard* aims to be a rock-solid alternative.
 
 ## Installation
 
@@ -26,3 +31,4 @@ It is currently still under heavy development, here are some planned changes:
 - add rounded corners
 - add fullscreen mode (maybe using a cmdline switch)
 - use constants / constant dict for default values
+- add folders
