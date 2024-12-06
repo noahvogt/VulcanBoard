@@ -29,6 +29,6 @@ It is currently still under heavy development, here are some planned changes:
 - add button merging
 - add possibility to choose the font family used for button texts
 - add rounded corners
-- add fullscreen mode (maybe using a cmdline switch)
+- add delayed fullscreen mode (maybe using a cmdline switch)
 - use constants / constant dict for default values
 - add folders
