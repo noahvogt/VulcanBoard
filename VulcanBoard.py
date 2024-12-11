@@ -24,6 +24,7 @@ import colorama
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
 from kivy.utils import get_color_from_hex
+from kivy.config import Config as kvConfig
 
 from util import log, error_exit_gui
 from config import get_config_path, ConfigLoader, Config
@@ -41,6 +42,7 @@ class VulcanBoardApp(App):
             config: Config = config
 
             self.Borderless = config.borderless
+            kvConfig.set("kivy", "window_icon", "icon.ico")
 
             button_map = {
                 (btn["position"][0], btn["position"][1]): btn
