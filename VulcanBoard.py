@@ -22,22 +22,26 @@ import sys
 import colorama
 
 from kivy.app import App
-from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.utils import get_color_from_hex
 
 from util import log, error_exit_gui
 from config import get_config_path, ConfigLoader, Config
+from ui import AutoResizeButton
 
 
 class VulcanBoardApp(App):
     def build(self):
+        self.icon = "icon.jpg"
         config_loader = ConfigLoader(get_config_path())
         config = config_loader.get_config()  # pyright: ignore
         if isinstance(config, str):
             error_exit_gui(config)
         else:
             config: Config = config
+
+            self.Borderless = config.borderless
+
             button_map = {
                 (btn["position"][0], btn["position"][1]): btn
                 for btn in config.buttons
@@ -55,7 +59,7 @@ class VulcanBoardApp(App):
                 for col in range(config.columns):
                     defined_button = button_map.get((row, col))
                     if defined_button:
-                        btn = Button(
+                        btn = AutoResizeButton(
                             text=defined_button.get("txt", ""),
                             background_color=get_color_from_hex(
                                 defined_button.get("bg_color", "aaaaff")
@@ -63,7 +67,6 @@ class VulcanBoardApp(App):
                             color=get_color_from_hex(
                                 defined_button.get("fg_color", "ffffff")
                             ),
-                            font_size=defined_button.get("fontsize", 14),
                             halign="center",
                             valign="middle",
                             background_normal="",
@@ -77,7 +80,7 @@ class VulcanBoardApp(App):
                             )
                         )
                     else:
-                        btn = Button(
+                        btn = AutoResizeButton(
                             background_color=get_color_from_hex("cccccc"),
                         )
                     layout.add_widget(btn)

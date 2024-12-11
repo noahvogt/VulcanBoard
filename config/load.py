@@ -28,11 +28,12 @@ class ConfigLoader:
     config_path: str
 
     def __post_init__(self) -> None:
+        self.buttons = []
         self.columns = 0
         self.rows = 0
-        self.buttons = []
         self.padding = 0
         self.spacing = 0
+        self.borderless = False
 
     def get_config(self) -> Config | str:
         try:
@@ -43,6 +44,7 @@ class ConfigLoader:
                 self.buttons = yaml_config.get("buttons")
                 self.padding = yaml_config.get("padding", 5)
                 self.spacing = yaml_config.get("spacing", 5)
+                self.borderless = yaml_config.get("borderless", False)
                 return self.__interpret_config()
         except (FileNotFoundError, PermissionError, IOError) as error:
             return f"Error: Could not access config file at {self.config_path}. Reason: {error}"
@@ -55,7 +57,12 @@ class ConfigLoader:
         self.__validate_styling()
 
         return Config(
-            self.columns, self.rows, self.buttons, self.spacing, self.padding
+            self.columns,
+            self.rows,
+            self.buttons,
+            self.spacing,
+            self.padding,
+            self.borderless,
         )
 
     def __validate_buttons(self) -> None:
@@ -100,14 +107,6 @@ class ConfigLoader:
                     f"invalid button 'fg_color' subentry: '{fg_color}'"
                 )
 
-            if (
-                not isinstance(fontsize := button.get("fontsize", ""), int)
-                or 0 > fontsize
-            ):
-                raise CustomException(
-                    f"invalid button 'fontsize' subentry: '{fontsize}'"
-                )
-
     def __validate_dimensions(self) -> None:
         for dimension in (self.columns, self.rows):
             if not isinstance(dimension, int) or (dimension <= 0):
@@ -117,3 +116,6 @@ class ConfigLoader:
         for styling in (self.spacing, self.padding):
             if not isinstance(styling, int) or (styling <= 0):
                 raise CustomException(f"invalid styling: {styling}")
+
+        if not isinstance(self.borderless, bool):
+            raise CustomException("invalid borderless value, should be boolean")
