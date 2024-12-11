@@ -25,6 +25,7 @@ from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
 from kivy.utils import get_color_from_hex
 from kivy.config import Config as kvConfig
+from kivy.core.window import Window
 
 from util import log, error_exit_gui
 from config import get_config_path, ConfigLoader, Config
@@ -41,7 +42,7 @@ class VulcanBoardApp(App):
         else:
             config: Config = config
 
-            self.Borderless = config.borderless
+            Window.borderless = config.borderless
             kvConfig.set("kivy", "window_icon", "icon.ico")
 
             button_map = {
