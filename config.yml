@@ -1,0 +1,20 @@
+columns: 6
+rows: 4
+buttons:
+  - position: [0, 0]
+    cmd: "curl http://localhost:8000/cd_archiv"
+    txt: "API\nCall"
+    bg_color: "fffaaa"
+    fg_color: "0c0c0c"
+    fontsize: 60
+  - position: [1, 1]
+    cmd: "echo 'Hello, World!'"
+    span: [1, 2]  # Spans 1 row and 2 columns
+    txt: "Say\nHello"
+    # bg_color: "aaaaff"
+    fontsize: 70
+  - position: [0, 1]
+    cmd: "sleep 10; echo 'Hello, delayed World!'"
+    txt: "Say\nDelayed\nHello"
+    bg_color: "aaa0ff"
+    fontsize: 50
