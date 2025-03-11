@@ -44,6 +44,7 @@ class VulcanBoardApp(App):
 
             Window.borderless = config.borderless
             kvConfig.set("kivy", "window_icon", "icon.ico")
+            kvConfig.set("kivy", "exit_on_escape", "0")
 
             button_map = {
                 (btn["position"][0], btn["position"][1]): btn
