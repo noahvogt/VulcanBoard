@@ -23,6 +23,29 @@ from .classes import Config
 from .validate import is_valid_hexcolor
 
 
+def get_state_from_id(states: list, state_id: int) -> dict:
+    for state in states:
+        possible_id = state.get("id", None)
+        if isinstance(possible_id, int):
+            if possible_id == state_id:
+                return state
+
+    return {}
+
+
+def get_state_id_from_exit_code(states: list, exit_code: int) -> int:
+    found_state_id = False
+    for found_states in states:
+        if found_states["id"] == exit_code:
+            found_state_id = True
+            break
+
+    if not found_state_id:
+        exit_code = 1
+
+    return exit_code
+
+
 @dataclass
 class ConfigLoader:
     config_path: str
@@ -84,28 +107,52 @@ class ConfigLoader:
                 or (0 > dimensions[1] or dimensions[1] > self.columns - 1)
             ):
                 raise CustomException(
-                    f"invalid button 'position' subentry: '{dimensions}'"
+                    f"invalid 'position' subentry: '{dimensions}'"
                 )
 
-            for entry in ("txt", "cmd"):
-                if not isinstance(result := button.get(entry, ""), str):
+            btn_dims = f"button ({dimensions[0]}, {dimensions[1]})"
+
+            if not isinstance(states := button.get("states", ""), list):
+                raise CustomException(
+                    f"invalid {btn_dims} 'states' subentry: '{states}'"
+                )
+
+            if len(states) == 0:
+                raise CustomException(
+                    f"invalid {btn_dims} 'states' subentry: list cannot be empty"
+                )
+
+            defined_state_ids = set()
+            for state in states:
+                if not (
+                    isinstance(state, dict)
+                    or isinstance(state.get("id", None), int)
+                    or isinstance(state.get("cmd", None), str)
+                    or isinstance(state.get("txt", None), str)
+                ):
                     raise CustomException(
-                        f"invalid button '{entry}' subentry: '{result}'"
+                        f"invalid {btn_dims}: invalid state detected"
+                    )
+                defined_state_ids.add(state.get("id", None))
+
+                if not isinstance(
+                    bg_color := state.get("bg_color", "cccccc"), str
+                ) or not is_valid_hexcolor(bg_color):
+                    raise CustomException(
+                        f"invalid {btn_dims} 'bg_color' subentry: '{bg_color}'"
                     )
 
-            if not isinstance(
-                bg_color := button.get("bg_color", "cccccc"), str
-            ) or not is_valid_hexcolor(bg_color):
-                raise CustomException(
-                    f"invalid button 'bg_color' subentry: '{bg_color}'"
-                )
+                if not isinstance(
+                    fg_color := state.get("fg_color", "ffffff"), str
+                ) or not is_valid_hexcolor(fg_color):
+                    raise CustomException(
+                        f"invalid {btn_dims} 'fg_color' subentry: '{fg_color}'"
+                    )
 
-            if not isinstance(
-                fg_color := button.get("fg_color", "ffffff"), str
-            ) or not is_valid_hexcolor(bg_color):
-                raise CustomException(
-                    f"invalid button 'fg_color' subentry: '{fg_color}'"
-                )
+            print(defined_state_ids)
+            # TODO: add const or rethink needed state id's
+            if not 0 in defined_state_ids:
+                raise CustomException(f"invalid {btn_dims}: missing state id 0")
 
     def __validate_dimensions(self) -> None:
         for dimension in (self.columns, self.rows):

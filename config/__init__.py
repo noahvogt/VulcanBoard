@@ -16,3 +16,4 @@
 from .path import get_config_path
 from .classes import Config
 from .load import ConfigLoader
+from .load import get_state_from_id, get_state_id_from_exit_code
