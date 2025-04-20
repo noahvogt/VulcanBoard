@@ -21,29 +21,11 @@ from util import CustomException
 
 from .classes import Config
 from .validate import is_valid_hexcolor
-
-
-def get_state_from_id(states: list, state_id: int) -> dict:
-    for state in states:
-        possible_id = state.get("id", None)
-        if isinstance(possible_id, int):
-            if possible_id == state_id:
-                return state
-
-    return {}
-
-
-def get_state_id_from_exit_code(states: list, exit_code: int) -> int:
-    found_state_id = False
-    for found_states in states:
-        if found_states["id"] == exit_code:
-            found_state_id = True
-            break
-
-    if not found_state_id:
-        exit_code = 1
-
-    return exit_code
+from .const import (
+    DEFAULT_BUTTON_BG_COLOR,
+    DEFAULT_BUTTON_FG_COLOR,
+    DEFAULT_STATE_ID,
+)
 
 
 @dataclass
@@ -122,6 +104,11 @@ class ConfigLoader:
                     f"invalid {btn_dims} 'states' subentry: list cannot be empty"
                 )
 
+            if not isinstance(button.get("autostart", False), bool):
+                raise CustomException(
+                    f"invalid {btn_dims} 'autostart' entry: must be boolean"
+                )
+
             defined_state_ids = set()
             for state in states:
                 if not (
@@ -133,26 +120,30 @@ class ConfigLoader:
                     raise CustomException(
                         f"invalid {btn_dims}: invalid state detected"
                     )
-                defined_state_ids.add(state.get("id", None))
+                state_id = state.get("id", None)
+                if isinstance(state_id, int):
+                    if state_id in defined_state_ids:
+                        raise CustomException(
+                            f"invalid {btn_dims}: tried to define state {state_id} twice"
+                        )
+                    defined_state_ids.add(state_id)
 
-                if not isinstance(
-                    bg_color := state.get("bg_color", "cccccc"), str
-                ) or not is_valid_hexcolor(bg_color):
-                    raise CustomException(
-                        f"invalid {btn_dims} 'bg_color' subentry: '{bg_color}'"
-                    )
+                for color_pair in ("bg_color", DEFAULT_BUTTON_BG_COLOR), (
+                    "fg_color",
+                    DEFAULT_BUTTON_FG_COLOR,
+                ):
+                    if not isinstance(
+                        color := state.get(color_pair[0], color_pair[1]),
+                        str,
+                    ) or not is_valid_hexcolor(color):
+                        raise CustomException(
+                            f"invalid {btn_dims} '{color_pair[0]}' subentry: '{color}'"
+                        )
 
-                if not isinstance(
-                    fg_color := state.get("fg_color", "ffffff"), str
-                ) or not is_valid_hexcolor(fg_color):
-                    raise CustomException(
-                        f"invalid {btn_dims} 'fg_color' subentry: '{fg_color}'"
-                    )
-
-            print(defined_state_ids)
-            # TODO: add const or rethink needed state id's
-            if not 0 in defined_state_ids:
-                raise CustomException(f"invalid {btn_dims}: missing state id 0")
+            if not DEFAULT_STATE_ID in defined_state_ids:
+                raise CustomException(
+                    f"invalid {btn_dims}: missing default state id '{DEFAULT_STATE_ID}'"
+                )
 
     def __validate_dimensions(self) -> None:
         for dimension in (self.columns, self.rows):

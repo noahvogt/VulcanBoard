@@ -1,4 +1,4 @@
-# Copyright © 2024 Noah Vogt <noah@noahvogt.com>
+# Copyright © 2025 Noah Vogt <noah@noahvogt.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,8 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .path import get_config_path
-from .classes import Config
-from .load import ConfigLoader
-from .state import get_state_from_id, get_state_id_from_exit_code, contains_id
-from .const import *
+DEFAULT_BUTTON_BG_COLOR = "aaaaff"
+DEFAULT_BUTTON_FG_COLOR = "ffffff"
+EMPTY_BUTTON_BG_COLOR = "cccccc"
+
+DEFAULT_STATE_ID = 0
+ERROR_SINK_STATE_ID = 1

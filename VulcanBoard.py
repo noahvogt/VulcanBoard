@@ -36,6 +36,12 @@ from config import (
     Config,
     get_state_from_id,
     get_state_id_from_exit_code,
+    contains_id,
+    DEFAULT_BUTTON_BG_COLOR,
+    DEFAULT_BUTTON_FG_COLOR,
+    EMPTY_BUTTON_BG_COLOR,
+    DEFAULT_STATE_ID,
+    ERROR_SINK_STATE_ID,
 )
 from ui import AutoResizeButton
 
@@ -73,25 +79,28 @@ class VulcanBoardApp(App):
                     defined_button = button_map.get((row, col))
                     if defined_button:
                         states = defined_button.get("states", [])
-                        print("STATES")
-                        print(states)
-                        state_id = [0]
+                        state_id = [DEFAULT_STATE_ID]
                         state = get_state_from_id(states, state_id[0])
-                        print("STATE")
-                        print(state)
 
                         btn = AutoResizeButton(
                             text=state.get("txt", ""),
                             background_color=get_color_from_hex(
-                                state.get("bg_color", "aaaaff")
+                                state.get("bg_color", DEFAULT_BUTTON_BG_COLOR)
                             ),
                             color=get_color_from_hex(
-                                state.get("fg_color", "ffffff")
+                                state.get("fg_color", DEFAULT_BUTTON_FG_COLOR)
                             ),
                             halign="center",
                             valign="middle",
                             background_normal="",
                         )
+
+                        if defined_button.get("autostart", False):
+                            self.async_task(
+                                self.execute_command_async(
+                                    states, state_id, btn
+                                )
+                            )
 
                         # pylint: disable=no-member
                         btn.bind(  # pyright: ignore
@@ -101,9 +110,12 @@ class VulcanBoardApp(App):
                                 )
                             )
                         )
+
                     else:
                         btn = AutoResizeButton(
-                            background_color=get_color_from_hex("cccccc"),
+                            background_color=get_color_from_hex(
+                                EMPTY_BUTTON_BG_COLOR
+                            ),
                         )
                     layout.add_widget(btn)
 
@@ -136,13 +148,15 @@ class VulcanBoardApp(App):
         try:
             print(states[new_state_id]["cmd"])
             process = await asyncio.create_subprocess_shell(
-                states[new_state_id]["cmd"], shell=True
+                get_state_from_id(states, new_state_id)["cmd"], shell=True
             )
             exit_code = await process.wait()
             print(f"EXIT {exit_code}")
-            log(f"Executed command: {states[new_state_id]['cmd']}")
+            log(
+                f"Executed command: {get_state_from_id(states, new_state_id)['cmd']}"
+            )
         except Exception as e:
-            exit_code = 1
+            exit_code = ERROR_SINK_STATE_ID
             log(f"Error executing command: {e}", color="yellow")
 
         if len(states) != 1:
@@ -163,11 +177,11 @@ class VulcanBoardApp(App):
 
         btn.text = state.get("txt", "")
         btn.background_color = get_color_from_hex(
-            state.get("bg_color", "cc0000")
+            state.get("bg_color", DEFAULT_BUTTON_BG_COLOR)
         )
-        # btn.foreground_color = get_color_from_hex(
-        #     state.get("bg_color", "cc0000")
-        #         )
+        btn.color = get_color_from_hex(
+            state.get("fg_color", DEFAULT_BUTTON_FG_COLOR)
+        )
 
 
 def start_asyncio_loop():
