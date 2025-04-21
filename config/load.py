@@ -110,23 +110,30 @@ class ConfigLoader:
                 )
 
             defined_state_ids = set()
+            to_follow_up_state_ids = set()
             for state in states:
                 if not (
                     isinstance(state, dict)
-                    or isinstance(state.get("id", None), int)
-                    or isinstance(state.get("cmd", None), str)
-                    or isinstance(state.get("txt", None), str)
+                    and isinstance(state_id := state.get("id", None), int)
                 ):
                     raise CustomException(
-                        f"invalid {btn_dims}: invalid state detected"
+                        f"invalid {btn_dims}: invalid state id detected"
                     )
                 state_id = state.get("id", None)
                 if isinstance(state_id, int):
                     if state_id in defined_state_ids:
                         raise CustomException(
-                            f"invalid {btn_dims}: tried to define state {state_id} twice"
+                            f"invalid {btn_dims}: tried to define state "
+                            + f"'{state_id}' twice"
                         )
                     defined_state_ids.add(state_id)
+
+                for string in ("cmd", "txt"):
+                    if not isinstance(state.get(string, ""), str):
+                        raise CustomException(
+                            f"invalid {btn_dims}: invalid '{string}' subentry "
+                            + f"for state id '{state_id}': must be a string"
+                        )
 
                 for color_pair in ("bg_color", DEFAULT_BUTTON_BG_COLOR), (
                     "fg_color",
@@ -137,13 +144,31 @@ class ConfigLoader:
                         str,
                     ) or not is_valid_hexcolor(color):
                         raise CustomException(
-                            f"invalid {btn_dims} '{color_pair[0]}' subentry: '{color}'"
+                            f"invalid {btn_dims}: '{color_pair[0]}' subentry "
+                            + f"for state '{state_id}': '{color}'"
                         )
+
+                follow_up_state = state.get("follow_up_state", 0)
+                if not isinstance(follow_up_state, int):
+                    raise CustomException(
+                        f"invalid {btn_dims}: 'follow_up_state' subentry for"
+                        + f" state '{state_id}': must be int"
+                    )
+                to_follow_up_state_ids.add(follow_up_state)
 
             if not DEFAULT_STATE_ID in defined_state_ids:
                 raise CustomException(
-                    f"invalid {btn_dims}: missing default state id '{DEFAULT_STATE_ID}'"
+                    f"invalid {btn_dims}: missing default state id "
+                    + f"'{DEFAULT_STATE_ID}'"
                 )
+
+            for follow_up_state_id in to_follow_up_state_ids:
+                if follow_up_state_id not in defined_state_ids:
+                    raise CustomException(
+                        f"invalid {btn_dims}: invalid 'follow_up_state' "
+                        + f"subentry found: state '{follow_up_state_id}' does "
+                        + "not exist"
+                    )
 
     def __validate_dimensions(self) -> None:
         for dimension in (self.columns, self.rows):

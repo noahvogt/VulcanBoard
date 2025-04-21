@@ -144,29 +144,37 @@ class VulcanBoardApp(App):
     async def execute_command_async(
         self, states: list, state_id: list[int], btn: AutoResizeButton
     ):
-        new_state_id = get_state_id_from_exit_code(states, state_id[0])
-        try:
-            print(states[new_state_id]["cmd"])
-            process = await asyncio.create_subprocess_shell(
-                get_state_from_id(states, new_state_id)["cmd"], shell=True
-            )
-            exit_code = await process.wait()
-            print(f"EXIT {exit_code}")
-            log(
-                f"Executed command: {get_state_from_id(states, new_state_id)['cmd']}"
-            )
-        except Exception as e:
-            exit_code = ERROR_SINK_STATE_ID
-            log(f"Error executing command: {e}", color="yellow")
+        follow_up_state_loop = True
+        while follow_up_state_loop:
+            new_state_id = get_state_id_from_exit_code(states, state_id[0])
+            state = get_state_from_id(states, new_state_id)
+            follow_up_state_loop = False
 
-        if len(states) != 1:
-            state_id[0] = exit_code  # pyright: ignore
-
-            Clock.schedule_once(
-                lambda _: self.update_button_feedback(
-                    states, btn, exit_code  # pyright: ignore
+            try:
+                print(states[new_state_id]["cmd"])
+                process = await asyncio.create_subprocess_shell(
+                    state["cmd"], shell=True
                 )
-            )
+                exit_code = await process.wait()
+                print(f"EXIT {exit_code}")
+                log(f"Executed command: {state['cmd']}")
+            except Exception as e:
+                exit_code = ERROR_SINK_STATE_ID
+                log(f"Error executing command: {e}", color="yellow")
+
+            if len(states) != 1:
+                if isinstance(
+                    follow_up_state := state.get("follow_up_state"), int
+                ):
+                    follow_up_state_loop = True
+                    exit_code = follow_up_state
+                state_id[0] = exit_code  # pyright: ignore
+
+                Clock.schedule_once(
+                    lambda _: self.update_button_feedback(
+                        states, btn, exit_code  # pyright: ignore
+                    )
+                )
 
     def update_button_feedback(
         self, states: list, btn: AutoResizeButton, exit_code: int
