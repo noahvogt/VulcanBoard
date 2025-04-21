@@ -41,3 +41,13 @@ def get_state_id_from_exit_code(states: list, exit_code: int) -> int:
         exit_code = ERROR_SINK_STATE_ID
 
     return exit_code
+
+
+def get_state_ids(states: list) -> list:
+    output = set()
+    for state in states:
+        possible_id = state.get("id", None)
+        if isinstance(possible_id, int):
+            output.add(possible_id)
+
+    return list(output)

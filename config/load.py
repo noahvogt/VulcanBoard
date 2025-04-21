@@ -25,7 +25,9 @@ from .const import (
     DEFAULT_BUTTON_BG_COLOR,
     DEFAULT_BUTTON_FG_COLOR,
     DEFAULT_STATE_ID,
+    ERROR_SINK_STATE_ID,
 )
+from .state import get_state_ids
 
 
 @dataclass
@@ -75,19 +77,16 @@ class ConfigLoader:
             raise CustomException(
                 "invalid button config. needs to be a list of dicts."
             )
+        buttons_that_affect_others = set()
+        button_grid = {}
         for button in self.buttons:
             if not isinstance(button, dict):
                 raise CustomException(
                     "invalid button config. needs to be a list of dicts."
                 )
 
-            if (
-                not isinstance(dimensions := button.get("position", ""), list)
-                or (not isinstance(dimensions[0], int))
-                or (not isinstance(dimensions[1], int))
-                or (0 > dimensions[0] or dimensions[0] > self.rows - 1)
-                or (0 > dimensions[1] or dimensions[1] > self.columns - 1)
-            ):
+            dimensions = button.get("position", "")
+            if not self.is_valid_dimension(dimensions):
                 raise CustomException(
                     f"invalid 'position' subentry: '{dimensions}'"
                 )
@@ -156,10 +155,37 @@ class ConfigLoader:
                     )
                 to_follow_up_state_ids.add(follow_up_state)
 
+            button_grid[(dimensions[0], dimensions[1])] = button
+
+            affects_buttons = button.get("affects_buttons", None)
+            if isinstance(affects_buttons, list):
+                if len(affects_buttons) == 0:
+                    raise CustomException(
+                        f"invalid {btn_dims}: 'affects_buttons' entry: must be"
+                        + "a non-empty list"
+                    )
+
+            if affects_buttons:
+                for affected_button_dimension in affects_buttons:
+                    if not self.is_valid_dimension(affected_button_dimension):
+                        raise CustomException(
+                            f"invalid {btn_dims}: 'affects_buttons' entry: "
+                            + "invalid dimensions: "
+                            + f"'{affected_button_dimension}'"
+                        )
+                buttons_that_affect_others.add(str(dimensions))
+
             if not DEFAULT_STATE_ID in defined_state_ids:
                 raise CustomException(
                     f"invalid {btn_dims}: missing default state id "
                     + f"'{DEFAULT_STATE_ID}'"
+                )
+            if (len(defined_state_ids) > 1) and (
+                not ERROR_SINK_STATE_ID in defined_state_ids
+            ):
+                raise CustomException(
+                    f"invalid {btn_dims}: missing error sink state id "
+                    + f"'{ERROR_SINK_STATE_ID}' for unstateless button"
                 )
 
             for follow_up_state_id in to_follow_up_state_ids:
@@ -169,6 +195,48 @@ class ConfigLoader:
                         + f"subentry found: state '{follow_up_state_id}' does "
                         + "not exist"
                     )
+
+        for btn_dims in buttons_that_affect_others:
+            row = int(btn_dims[btn_dims.find("[") + 1 : btn_dims.find(",")])
+            col = int(btn_dims[btn_dims.find(" ") + 1 : btn_dims.find("]")])
+            button_dimensions = (row, col)
+
+            button = button_grid[button_dimensions]
+            affects_buttons = button["affects_buttons"]
+            ids = []
+            ids.append(get_state_ids(button["states"]))
+            for affected_btn_dims in affects_buttons:
+                try:
+                    affected_button = button_grid[
+                        (affected_btn_dims[0], affected_btn_dims[1])
+                    ]
+                except KeyError as e:
+                    raise CustomException(
+                        f"invalid button ({row}, {col}): 'affects_buttons' "
+                        + "buttons must be defined"
+                    ) from e
+                ids.append(get_state_ids(affected_button["states"]))
+
+            for id_listing in ids[1:]:
+                if len(id_listing) == 1:
+                    raise CustomException(
+                        f"invalid button ({row}, {col}): 'affects_buttons' "
+                        + "buttons cannot be stateless"
+                    )
+                if id_listing != ids[0]:
+                    raise CustomException(
+                        f"invalid button ({row}, {col}): 'affects_buttons' "
+                        + "buttons must have the same state id's"
+                    )
+
+    def is_valid_dimension(self, dimensions):
+        return not (
+            not isinstance(dimensions, list)
+            or (not isinstance(dimensions[0], int))
+            or (not isinstance(dimensions[1], int))
+            or (0 > dimensions[0] or dimensions[0] > self.rows - 1)
+            or (0 > dimensions[1] or dimensions[1] > self.columns - 1)
+        )
 
     def __validate_dimensions(self) -> None:
         for dimension in (self.columns, self.rows):

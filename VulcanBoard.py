@@ -19,7 +19,7 @@
 import threading
 import sys
 import asyncio
-
+from functools import partial
 import colorama
 
 from kivy.app import App
@@ -36,7 +36,6 @@ from config import (
     Config,
     get_state_from_id,
     get_state_id_from_exit_code,
-    contains_id,
     DEFAULT_BUTTON_BG_COLOR,
     DEFAULT_BUTTON_FG_COLOR,
     EMPTY_BUTTON_BG_COLOR,
@@ -49,6 +48,8 @@ from ui import AutoResizeButton
 class VulcanBoardApp(App):
     def build(self):
         self.loop = self.ensure_asyncio_loop_running()
+        self.button_grid = {}
+        self.button_config_map = {}
         self.icon = "icon.jpg"
         config_loader = ConfigLoader(get_config_path())
         config = config_loader.get_config()  # pyright: ignore
@@ -61,7 +62,7 @@ class VulcanBoardApp(App):
             kvConfig.set("kivy", "window_icon", "icon.ico")
             kvConfig.set("kivy", "exit_on_escape", "0")
 
-            button_map = {
+            self.button_config_map = {
                 (btn["position"][0], btn["position"][1]): btn
                 for btn in config.buttons
             }
@@ -76,7 +77,7 @@ class VulcanBoardApp(App):
             # Populate grid with buttons and placeholders
             for row in range(config.rows):
                 for col in range(config.columns):
-                    defined_button = button_map.get((row, col))
+                    defined_button = self.button_config_map.get((row, col))
                     if defined_button:
                         states = defined_button.get("states", [])
                         state_id = [DEFAULT_STATE_ID]
@@ -98,15 +99,15 @@ class VulcanBoardApp(App):
                         if defined_button.get("autostart", False):
                             self.async_task(
                                 self.execute_command_async(
-                                    states, state_id, btn
+                                    defined_button, state_id, btn
                                 )
                             )
 
                         # pylint: disable=no-member
                         btn.bind(  # pyright: ignore
-                            on_release=lambda btn_instance, states=states, state_id=state_id: self.async_task(
+                            on_release=lambda btn_instance, button=defined_button, state_id=state_id: self.async_task(
                                 self.execute_command_async(
-                                    states, state_id, btn_instance
+                                    button, state_id, btn_instance
                                 )
                             )
                         )
@@ -117,6 +118,7 @@ class VulcanBoardApp(App):
                                 EMPTY_BUTTON_BG_COLOR
                             ),
                         )
+                    self.button_grid[(row, col)] = btn
                     layout.add_widget(btn)
 
             return layout
@@ -142,21 +144,20 @@ class VulcanBoardApp(App):
         sys.exit(1)
 
     async def execute_command_async(
-        self, states: list, state_id: list[int], btn: AutoResizeButton
+        self, button: dict, state_id: list[int], btn: AutoResizeButton
     ):
         follow_up_state_loop = True
+        states = button["states"]
         while follow_up_state_loop:
             new_state_id = get_state_id_from_exit_code(states, state_id[0])
             state = get_state_from_id(states, new_state_id)
             follow_up_state_loop = False
 
             try:
-                print(states[new_state_id]["cmd"])
                 process = await asyncio.create_subprocess_shell(
                     state["cmd"], shell=True
                 )
                 exit_code = await process.wait()
-                print(f"EXIT {exit_code}")
                 log(f"Executed command: {state['cmd']}")
             except Exception as e:
                 exit_code = ERROR_SINK_STATE_ID
@@ -175,6 +176,19 @@ class VulcanBoardApp(App):
                         states, btn, exit_code  # pyright: ignore
                     )
                 )
+                affects_buttons = button.get("affects_buttons", None)
+                if affects_buttons:
+                    for affected_btn_dims in affects_buttons:
+                        btn_pos = (affected_btn_dims[0], affected_btn_dims[1])
+                        affected_button = self.button_grid[btn_pos]
+                        # TODO: check if also works if cmd is not the same for each state
+                        Clock.schedule_once(
+                            lambda _, btn_pos=btn_pos, affected_button=affected_button: self.update_button_feedback(
+                                self.button_config_map[btn_pos]["states"],
+                                affected_button,
+                                exit_code,  # pyright: ignore
+                            )
+                        )
 
     def update_button_feedback(
         self, states: list, btn: AutoResizeButton, exit_code: int
