@@ -19,7 +19,6 @@
 import threading
 import sys
 import asyncio
-from functools import partial
 import colorama
 
 from kivy.app import App
@@ -80,8 +79,7 @@ class VulcanBoardApp(App):
                     defined_button = self.button_config_map.get((row, col))
                     if defined_button:
                         states = defined_button.get("states", [])
-                        state_id = [DEFAULT_STATE_ID]
-                        state = get_state_from_id(states, state_id[0])
+                        state = get_state_from_id(states, DEFAULT_STATE_ID)
 
                         btn = AutoResizeButton(
                             text=state.get("txt", ""),
@@ -94,21 +92,18 @@ class VulcanBoardApp(App):
                             halign="center",
                             valign="middle",
                             background_normal="",
+                            state_id=DEFAULT_STATE_ID,
                         )
 
                         if defined_button.get("autostart", False):
                             self.async_task(
-                                self.execute_command_async(
-                                    defined_button, state_id, btn
-                                )
+                                self.execute_command_async(defined_button, btn)
                             )
 
                         # pylint: disable=no-member
                         btn.bind(  # pyright: ignore
-                            on_release=lambda btn_instance, button=defined_button, state_id=state_id: self.async_task(
-                                self.execute_command_async(
-                                    button, state_id, btn_instance
-                                )
+                            on_release=lambda btn_instance, button=defined_button: self.async_task(
+                                self.execute_command_async(button, btn_instance)
                             )
                         )
 
@@ -143,14 +138,11 @@ class VulcanBoardApp(App):
         popup.dismiss()
         sys.exit(1)
 
-    async def execute_command_async(
-        self, button: dict, state_id: list[int], btn: AutoResizeButton
-    ):
+    async def execute_command_async(self, button: dict, btn: AutoResizeButton):
         follow_up_state_loop = True
         states = button["states"]
         while follow_up_state_loop:
-            new_state_id = get_state_id_from_exit_code(states, state_id[0])
-            state = get_state_from_id(states, new_state_id)
+            state = get_state_from_id(states, btn.state_id)
             follow_up_state_loop = False
 
             try:
@@ -169,7 +161,6 @@ class VulcanBoardApp(App):
                 ):
                     follow_up_state_loop = True
                     exit_code = follow_up_state
-                state_id[0] = exit_code  # pyright: ignore
 
                 Clock.schedule_once(
                     lambda _: self.update_button_feedback(
@@ -181,7 +172,6 @@ class VulcanBoardApp(App):
                     for affected_btn_dims in affects_buttons:
                         btn_pos = (affected_btn_dims[0], affected_btn_dims[1])
                         affected_button = self.button_grid[btn_pos]
-                        # TODO: check if also works if cmd is not the same for each state
                         Clock.schedule_once(
                             lambda _, btn_pos=btn_pos, affected_button=affected_button: self.update_button_feedback(
                                 self.button_config_map[btn_pos]["states"],
@@ -193,11 +183,11 @@ class VulcanBoardApp(App):
     def update_button_feedback(
         self, states: list, btn: AutoResizeButton, exit_code: int
     ):
-        state = get_state_from_id(
-            states, get_state_id_from_exit_code(states, exit_code)
-        )
+        state_id = get_state_id_from_exit_code(states, exit_code)
+        state = get_state_from_id(states, state_id)
 
         btn.text = state.get("txt", "")
+        btn.state_id = state_id
         btn.background_color = get_color_from_hex(
             state.get("bg_color", DEFAULT_BUTTON_BG_COLOR)
         )

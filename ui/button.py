@@ -13,15 +13,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import override
+
 from kivy.uix.button import Button
-from kivy.properties import ListProperty  # pylint: disable=no-name-in-module
+from kivy.properties import (  # pylint: disable=no-name-in-module
+    ListProperty,
+    NumericProperty,
+)
 
 
 class AutoResizeButton(Button):
     """A button that adjusts its label font size dynamically."""
 
     original_pos = ListProperty([0, 0])
+    state_id = NumericProperty(0)
 
+    @override
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.dragged = False
@@ -30,7 +37,8 @@ class AutoResizeButton(Button):
             size=self.adjust_font_size, text=self.adjust_font_size
         )
 
-    def adjust_font_size(self, *args):
+    @override
+    def adjust_font_size(self, *_):
         """Dynamically adjusts font size to fit the button's bounds."""
         if not self.text:
             return
