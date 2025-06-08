@@ -17,7 +17,7 @@ They also crash way too often, so especially given their intended use for livest
 
 To setup you need to have python3 installed. In addition, to install the dependencies using pip:
 
-    pip install pyyaml kivy
+    pip install -r requirements.txt
 
 ## Project State
 It is currently still under heavy development, here are some planned changes:
