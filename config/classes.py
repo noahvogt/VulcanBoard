@@ -24,3 +24,7 @@ class Config:
     spacing: int
     padding: int
     borderless: bool
+    set_window_pos: bool
+    window_pos_x: int
+    window_pos_y: int
+    use_auto_fullscreen_mode: bool

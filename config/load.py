@@ -41,6 +41,10 @@ class ConfigLoader:
         self.padding = 0
         self.spacing = 0
         self.borderless = False
+        self.set_window_pos = False
+        self.window_pos_x = 0
+        self.window_pos_y = 0
+        self.use_auto_fullscreen_mode = False
 
     def get_config(self) -> Config | str:
         try:
@@ -52,6 +56,10 @@ class ConfigLoader:
                 self.padding = yaml_config.get("padding", 5)
                 self.spacing = yaml_config.get("spacing", 5)
                 self.borderless = yaml_config.get("borderless", False)
+                self.set_window_pos = yaml_config.get("set_window_pos", False)
+                self.window_pos_x = yaml_config.get("window_pox_x", 0)
+                self.window_pos_y = yaml_config.get("window_pox_y", 0)
+                self.use_auto_fullscreen_mode = yaml_config.get("use_auto_fullscreen_mode", False)
                 return self.__interpret_config()
         except (FileNotFoundError, PermissionError, IOError) as error:
             return f"Error: Could not access config file at {self.config_path}. Reason: {error}"
@@ -70,6 +78,10 @@ class ConfigLoader:
             self.spacing,
             self.padding,
             self.borderless,
+            self.set_window_pos,
+            self.window_pos_x,
+            self.window_pos_y,
+            self.use_auto_fullscreen_mode,
         )
 
     def __validate_buttons(self) -> None:

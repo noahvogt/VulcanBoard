@@ -49,7 +49,7 @@ class VulcanBoardApp(App):
         self.loop = self.ensure_asyncio_loop_running()
         self.button_grid = {}
         self.button_config_map = {}
-        self.icon = "icon.jpg"
+        self.icon = "icon.png"
         config_loader = ConfigLoader(get_config_path())
         config = config_loader.get_config()  # pyright: ignore
         if isinstance(config, str):
@@ -58,7 +58,12 @@ class VulcanBoardApp(App):
             config: Config = config
 
             Window.borderless = config.borderless
-            kvConfig.set("kivy", "window_icon", "icon.ico")
+            if config.set_window_pos:
+                Window.left = config.window_pos_x
+                Window.top = config.window_pos_y
+            if config.use_auto_fullscreen_mode:
+                Window.fullscreen = "auto"
+
             kvConfig.set("kivy", "exit_on_escape", "0")
 
             self.button_config_map = {

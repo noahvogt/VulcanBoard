@@ -20,14 +20,14 @@ To setup you need to have python3 installed. In addition, to install the depende
     pip install -r requirements.txt
 
 ## Project State
-It is currently still under heavy development, here are some planned changes:
+VulcanBoard is currently used weekly in livestreaming production by the author, hence in a usable state. Here are some planned or possible future changes:
 - add documentation for the configuration and use of VulcanBoard
 - add gui window to configure keys
     - add multiple boards to config.yml
     - add edit history cache
+    - add internal commands (see api proposal)
 - add button merging
 - add possibility to choose the font family used for button texts
 - add rounded corners for buttons
 - use constants / constant dict for default values
-- add folders
-- add button signals (changing button color / text based on certain conditions)
+- add folders (which is already possible with button states, but kinda hacky)
