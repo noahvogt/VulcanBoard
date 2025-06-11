@@ -26,8 +26,9 @@ VulcanBoard is currently used weekly in livestreaming production by the author, 
     - add multiple boards to config.yml
     - add edit history cache
     - add internal commands (see api proposal)
-- add button merging
+- add button merging (meaning a button that takes of the space of otherwise multiple buttons)
 - add possibility to choose the font family used for button texts
 - add rounded corners for buttons
 - use constants / constant dict for default values
 - add folders (which is already possible with button states, but kinda hacky)
+- add showing an image instead of button text
