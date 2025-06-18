@@ -57,8 +57,8 @@ class ConfigLoader:
                 self.spacing = yaml_config.get("spacing", 5)
                 self.borderless = yaml_config.get("borderless", False)
                 self.set_window_pos = yaml_config.get("set_window_pos", False)
-                self.window_pos_x = yaml_config.get("window_pox_x", 0)
-                self.window_pos_y = yaml_config.get("window_pox_y", 0)
+                self.window_pos_x = yaml_config.get("window_pos_x", 0)
+                self.window_pos_y = yaml_config.get("window_pos_y", 0)
                 self.use_auto_fullscreen_mode = yaml_config.get("use_auto_fullscreen_mode", False)
                 return self.__interpret_config()
         except (FileNotFoundError, PermissionError, IOError) as error:
