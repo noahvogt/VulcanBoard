@@ -19,6 +19,7 @@
 import threading
 import sys
 import asyncio
+import time
 import colorama
 
 from kivy.app import App
@@ -45,6 +46,10 @@ from ui import AutoResizeButton
 
 
 class VulcanBoardApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.last_touch_time = 0  # For debounce handling
+
     def build(self):
         self.loop = self.ensure_asyncio_loop_running()
         self.button_grid = {}
@@ -52,6 +57,7 @@ class VulcanBoardApp(App):
         self.icon = "icon.png"
         config_loader = ConfigLoader(get_config_path())
         config = config_loader.get_config()  # pyright: ignore
+
         if isinstance(config, str):
             error_exit_gui(config)
         else:
@@ -105,10 +111,11 @@ class VulcanBoardApp(App):
                                 self.execute_command_async(defined_button, btn)
                             )
 
-                        # pylint: disable=no-member
-                        btn.bind(  # pyright: ignore
-                            on_release=lambda btn_instance, button=defined_button: self.async_task(
-                                self.execute_command_async(button, btn_instance)
+                        # Use debounce wrapper instead of raw on_release to
+                        # avoid double execution on single taps on touchscreens
+                        btn.bind(  # pyright: ignore pylint: disable=no-member
+                            on_release=lambda btn_instance, button=defined_button: self.on_button_pressed_once(
+                                button, btn_instance
                             )
                         )
 
@@ -123,12 +130,18 @@ class VulcanBoardApp(App):
 
             return layout
 
+    def on_button_pressed_once(self, button, btn_instance):
+        now = time.time()
+        if now - self.last_touch_time > 0.3:  # 300 ms debounce
+            self.last_touch_time = now
+            self.async_task(self.execute_command_async(button, btn_instance))
+
     def async_task(self, coroutine):
         asyncio.run_coroutine_threadsafe(coroutine, self.loop)
 
     def ensure_asyncio_loop_running(self):
         if hasattr(self, "loop"):
-            return self.loop  # Already created
+            return self.loop
 
         loop = asyncio.new_event_loop()
 
@@ -169,7 +182,7 @@ class VulcanBoardApp(App):
 
                 Clock.schedule_once(
                     lambda _: self.update_button_feedback(
-                        states, btn, exit_code  # pyright: ignore
+                        states, btn, exit_code
                     )
                 )
                 affects_buttons = button.get("affects_buttons", None)
@@ -181,7 +194,7 @@ class VulcanBoardApp(App):
                             lambda _, btn_pos=btn_pos, affected_button=affected_button: self.update_button_feedback(
                                 self.button_config_map[btn_pos]["states"],
                                 affected_button,
-                                exit_code,  # pyright: ignore
+                                exit_code,
                             )
                         )
 
