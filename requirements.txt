@@ -2,3 +2,5 @@ pyyaml
 kivy
 colorama
 termcolor
+fastapi
+uvicorn

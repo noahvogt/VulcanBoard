@@ -28,3 +28,4 @@ class Config:
     window_pos_x: int
     window_pos_y: int
     use_auto_fullscreen_mode: bool
+    api_port: int

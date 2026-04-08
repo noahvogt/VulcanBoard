@@ -45,6 +45,7 @@ class ConfigLoader:
         self.window_pos_x = 0
         self.window_pos_y = 0
         self.use_auto_fullscreen_mode = False
+        self.api_port = 0
 
     def get_config(self) -> Config | str:
         try:
@@ -59,7 +60,10 @@ class ConfigLoader:
                 self.set_window_pos = yaml_config.get("set_window_pos", False)
                 self.window_pos_x = yaml_config.get("window_pos_x", 0)
                 self.window_pos_y = yaml_config.get("window_pos_y", 0)
-                self.use_auto_fullscreen_mode = yaml_config.get("use_auto_fullscreen_mode", False)
+                self.use_auto_fullscreen_mode = yaml_config.get(
+                    "use_auto_fullscreen_mode", False
+                )
+                self.api_port = yaml_config.get("api_port", 8080)
                 return self.__interpret_config()
         except (FileNotFoundError, PermissionError, IOError) as error:
             return f"Error: Could not access config file at {self.config_path}. Reason: {error}"
@@ -82,6 +86,7 @@ class ConfigLoader:
             self.window_pos_x,
             self.window_pos_y,
             self.use_auto_fullscreen_mode,
+            self.api_port,
         )
 
     def __validate_buttons(self) -> None:

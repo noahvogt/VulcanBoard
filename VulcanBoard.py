@@ -21,6 +21,8 @@ import sys
 import asyncio
 import time
 import colorama
+import uvicorn
+from fastapi import FastAPI, HTTPException
 
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
@@ -128,6 +130,18 @@ class VulcanBoardApp(App):
                     self.button_grid[(row, col)] = btn
                     layout.add_widget(btn)
 
+            self.api_app = FastAPI(title="VulcanBoard API")
+            self._setup_api_routes()
+
+            uvicorn_config = uvicorn.Config(
+                app=self.api_app,
+                host="0.0.0.0",
+                port=config.api_port,
+                log_level="info",
+            )
+            server = uvicorn.Server(uvicorn_config)
+            self.async_task(server.serve())
+
             return layout
 
     def on_button_pressed_once(self, button, btn_instance):
@@ -212,6 +226,66 @@ class VulcanBoardApp(App):
         btn.color = get_color_from_hex(
             state.get("fg_color", DEFAULT_BUTTON_FG_COLOR)
         )
+
+    def update_button_state_from_api(
+        self, dt, row: int, col: int, state_id: int
+    ):
+        btn = self.button_grid.get((row, col))
+        btn_config = self.button_config_map.get((row, col))
+        if not btn or not btn_config:
+            return
+
+        states = btn_config.get("states", [])
+        state = get_state_from_id(states, state_id)
+
+        btn.text = state.get("txt", "")
+        btn.state_id = state_id
+        btn.background_color = get_color_from_hex(
+            state.get("bg_color", DEFAULT_BUTTON_BG_COLOR)
+        )
+        btn.color = get_color_from_hex(
+            state.get("fg_color", DEFAULT_BUTTON_FG_COLOR)
+        )
+
+    def _setup_api_routes(self):
+        @self.api_app.get("/get_states")
+        def get_states(x: int, y: int):
+            btn_config = self.button_config_map.get((x, y))
+            if not btn_config:
+                raise HTTPException(status_code=404, detail="Button not found")
+            return {"states": btn_config.get("states", [])}
+
+        @self.api_app.get("/get_current_state")
+        def get_current_state(x: int, y: int):
+            btn = self.button_grid.get((x, y))
+            if not btn:
+                raise HTTPException(status_code=404, detail="Button not found")
+            return {"state_id": getattr(btn, "state_id", DEFAULT_STATE_ID)}
+
+        @self.api_app.get("/set_state")
+        @self.api_app.post("/set_state")
+        def set_state(x: int, y: int, state: int):
+            btn_config = self.button_config_map.get((x, y))
+            btn = self.button_grid.get((x, y))
+            if not btn_config or not btn:
+                raise HTTPException(status_code=404, detail="Button not found")
+
+            states = btn_config.get("states", [])
+            valid_state = None
+            for s in states:
+                if s.get("id", DEFAULT_STATE_ID) == state:
+                    valid_state = s
+                    break
+            if not valid_state:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"State {state} not found for this button",
+                )
+
+            Clock.schedule_once(
+                lambda dt: self.update_button_state_from_api(dt, x, y, state)
+            )
+            return {"status": "success", "state_id": state}
 
 
 def start_asyncio_loop():

@@ -18,7 +18,6 @@ kivy.require("1.9.0")
 # is pressed (or released after a click/touch).
 from kivy.uix.button import Button
 
-
 # The GridLayout arranges children in a matrix.
 # It takes the available space and
 # divides it into columns and rows,
