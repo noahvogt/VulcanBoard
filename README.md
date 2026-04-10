@@ -32,3 +32,5 @@ VulcanBoard is currently used weekly in livestreaming production by the author, 
 - use constants / constant dict for default values
 - add folders (which is already possible with button states, but kinda hacky)
 - add showing an image instead of button text
+- slaves (other desktop / smartphone clients) can connect via websockets to the master VulcanBoard instance
+    - simple permission system: the master can live enable/disable certain buttons for a subset of slaves
