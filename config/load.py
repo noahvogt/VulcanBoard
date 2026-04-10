@@ -165,12 +165,31 @@ class ConfigLoader:
                         )
 
                 follow_up_state = state.get("follow_up_state", 0)
-                if not isinstance(follow_up_state, int):
+                if not (
+                    isinstance(follow_up_state, int)
+                    or follow_up_state == "exit_code"
+                ):
                     raise CustomException(
                         f"invalid {btn_dims}: 'follow_up_state' subentry for"
-                        + f" state '{state_id}': must be int"
+                        + f" state '{state_id}': must be int or 'exit_code'"
                     )
-                to_follow_up_state_ids.add(follow_up_state)
+                if isinstance(follow_up_state, int):
+                    to_follow_up_state_ids.add(follow_up_state)
+
+                follow_up_execute_states = state.get("follow_up_execute_states")
+                if follow_up_execute_states is not None:
+                    if not isinstance(follow_up_execute_states, list):
+                        raise CustomException(
+                            f"invalid {btn_dims}: 'follow_up_execute_states' subentry for"
+                            + f" state '{state_id}': must be a list"
+                        )
+                    for sid in follow_up_execute_states:
+                        if not isinstance(sid, int):
+                            raise CustomException(
+                                f"invalid {btn_dims}: 'follow_up_execute_states' subentry for"
+                                + f" state '{state_id}': list elements must be ints"
+                            )
+                        to_follow_up_state_ids.add(sid)
 
             button_grid[(dimensions[0], dimensions[1])] = button
 
