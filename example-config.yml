@@ -2,15 +2,21 @@ columns: 6
 rows: 4
 buttons:
   - position: [0, 0]
-    cmd: "curl http://localhost:8000/get_something"
-    txt: "API\nCall"
-    bg_color: "fffaaa"
-    fg_color: "0c0c0c"
+    states:
+      - id: 0
+        cmd: "curl http://localhost:8000/get_something"
+        txt: "API\nCall"
+        bg_color: "fffaaa"
+        fg_color: "0c0c0c"
   - position: [1, 1]
-    cmd: "echo 'Hello, World!'"
-    txt: "Say\nHello"
-    # bg_color: "aaaaff"
+    states:
+      - id: 0
+        cmd: "echo 'Hello, World!'"
+        txt: "Say\nHello"
+        # bg_color: "aaaaff"
   - position: [0, 1]
-    cmd: "sleep 10; echo 'Hello, delayed World!'"
-    txt: "Say\nDelayed\nHello"
-    bg_color: "aaa0ff"
+    states:
+      - id: 0
+        cmd: "sleep 10; echo 'Hello, delayed World!'"
+        txt: "Say\nDelayed\nHello"
+        bg_color: "aaa0ff"
