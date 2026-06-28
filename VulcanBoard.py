@@ -50,7 +50,7 @@ from ui import AutoResizeButton
 class VulcanBoardApp(App):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.last_touch_time = 0  # For debounce handling
+        self.last_touch_times = {}
 
     def build(self):
         self.loop = self.ensure_asyncio_loop_running()
@@ -146,8 +146,12 @@ class VulcanBoardApp(App):
 
     def on_button_pressed_once(self, button, btn_instance):
         now = time.time()
-        if now - self.last_touch_time > 0.3:  # 300 ms debounce
-            self.last_touch_time = now
+
+        btn_pos = tuple(button["position"])
+        last_time = self.last_touch_times.get(btn_pos, 0)
+
+        if now - last_time > 0.3:  # 300 ms per-button debounce
+            self.last_touch_times[btn_pos] = now
             self.async_task(self.execute_command_async(button, btn_instance))
 
     def async_task(self, coroutine):
