@@ -78,6 +78,9 @@ class VulcanBoardApp(App):
                 (btn["position"][0], btn["position"][1]): btn
                 for btn in config.buttons
             }
+            self.button_id_map = {
+                btn["id"]: btn for btn in config.buttons if "id" in btn
+            }
 
             layout = GridLayout(
                 cols=config.columns,
@@ -267,25 +270,80 @@ class VulcanBoardApp(App):
         )
 
     def _setup_api_routes(self):
+        from typing import Optional
+
         @self.api_app.get("/get_states")
-        def get_states(x: int, y: int):
-            btn_config = self.button_config_map.get((x, y))
+        def get_states(
+            x: Optional[int] = None,
+            y: Optional[int] = None,
+            id: Optional[str] = None,
+        ):
+            if id is not None:
+                btn_config = self.button_id_map.get(id)
+            elif x is not None and y is not None:
+                btn_config = self.button_config_map.get((x, y))
+            else:
+                raise HTTPException(
+                    status_code=400, detail="Must provide x and y, or id"
+                )
+
             if not btn_config:
                 raise HTTPException(status_code=404, detail="Button not found")
             return {"states": btn_config.get("states", [])}
 
         @self.api_app.get("/get_current_state")
-        def get_current_state(x: int, y: int):
-            btn = self.button_grid.get((x, y))
+        def get_current_state(
+            x: Optional[int] = None,
+            y: Optional[int] = None,
+            id: Optional[str] = None,
+        ):
+            if id is not None:
+                btn_config = self.button_id_map.get(id)
+                btn = (
+                    self.button_grid.get(
+                        (btn_config["position"][0], btn_config["position"][1])
+                    )
+                    if btn_config
+                    else None
+                )
+            elif x is not None and y is not None:
+                btn = self.button_grid.get((x, y))
+            else:
+                raise HTTPException(
+                    status_code=400, detail="Must provide x and y, or id"
+                )
+
             if not btn:
                 raise HTTPException(status_code=404, detail="Button not found")
             return {"state_id": getattr(btn, "state_id", DEFAULT_STATE_ID)}
 
         @self.api_app.get("/set_state")
         @self.api_app.post("/set_state")
-        def set_state(x: int, y: int, state: int):
-            btn_config = self.button_config_map.get((x, y))
-            btn = self.button_grid.get((x, y))
+        def set_state(
+            state: int,
+            x: Optional[int] = None,
+            y: Optional[int] = None,
+            id: Optional[str] = None,
+        ):
+            if id is not None:
+                btn_config = self.button_id_map.get(id)
+                if btn_config:
+                    bx, by = (
+                        btn_config["position"][0],
+                        btn_config["position"][1],
+                    )
+                    btn = self.button_grid.get((bx, by))
+                else:
+                    btn = None
+            elif x is not None and y is not None:
+                bx, by = x, y
+                btn_config = self.button_config_map.get((x, y))
+                btn = self.button_grid.get((x, y))
+            else:
+                raise HTTPException(
+                    status_code=400, detail="Must provide x and y, or id"
+                )
+
             if not btn_config or not btn:
                 raise HTTPException(status_code=404, detail="Button not found")
 
@@ -302,7 +360,7 @@ class VulcanBoardApp(App):
                 )
 
             Clock.schedule_once(
-                lambda dt: self.update_button_state_from_api(dt, x, y, state)
+                lambda dt: self.update_button_state_from_api(dt, bx, by, state)
             )
             return {"status": "success", "state_id": state}
 

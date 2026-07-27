@@ -96,6 +96,7 @@ class ConfigLoader:
             )
         buttons_that_affect_others = set()
         button_grid = {}
+        defined_button_ids = set()
         for button in self.buttons:
             if not isinstance(button, dict):
                 raise CustomException(
@@ -109,6 +110,17 @@ class ConfigLoader:
                 )
 
             btn_dims = f"button ({dimensions[0]}, {dimensions[1]})"
+
+            if "id" in button:
+                if not isinstance(button["id"], str):
+                    raise CustomException(
+                        f"invalid {btn_dims} 'id' entry: must be a string"
+                    )
+                if button["id"] in defined_button_ids:
+                    raise CustomException(
+                        f"invalid {btn_dims}: tried to define button id '{button['id']}' twice"
+                    )
+                defined_button_ids.add(button["id"])
 
             if not isinstance(states := button.get("states", ""), list):
                 raise CustomException(

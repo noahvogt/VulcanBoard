@@ -2,6 +2,7 @@ columns: 6
 rows: 4
 buttons:
   - position: [0, 0]
+    id: api_call_btn
     states:
       - id: 0
         cmd: "curl http://localhost:8000/get_something"
@@ -9,12 +10,14 @@ buttons:
         bg_color: "fffaaa"
         fg_color: "0c0c0c"
   - position: [1, 1]
+    id: say_hello_btn
     states:
       - id: 0
         cmd: "echo 'Hello, World!'"
         txt: "Say\nHello"
         # bg_color: "aaaaff"
   - position: [0, 1]
+    id: delayed_hello_btn
     states:
       - id: 0
         cmd: "sleep 10; echo 'Hello, delayed World!'"
