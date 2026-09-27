@@ -233,7 +233,7 @@ class ConfigLoader:
             ):
                 raise CustomException(
                     f"invalid {btn_dims}: missing error sink state id "
-                    + f"'{ERROR_SINK_STATE_ID}' for unstateless button"
+                    + f"'{ERROR_SINK_STATE_ID}' for stateful button"
                 )
 
             for follow_up_state_id in to_follow_up_state_ids:
