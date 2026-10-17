@@ -12,11 +12,11 @@ A hotkey board for desktop touchscreens (Kivy GUI + FastAPI HTTP API). Its main 
 
 ## Behavior that the code defines
 
-The code is authoritative; the README is partly outdated.
+If the README and the code disagree, the code is authoritative; fix the README.
 
 - **Threading:** Kivy runs on the main thread. Button commands and the uvicorn server run as coroutines on a separate asyncio loop in a daemon thread (`async_task`). **Widget changes must go through `Clock.schedule_once`**, never directly from that loop.
 - `position: [row, col]`. The grid is keyed `(row, col)`. The API's `x`/`y` and `affects_buttons` entries are the same `[row, col]` pair, despite the names.
-- **For stateful buttons (more than one state), the command's exit code always selects the new state**, and an unknown exit code goes to state `1` (error sink). There is no implicit cycling, contrary to the README. `follow_up_state` (an int or `exit_code`) only decides whether the command of the resulting state is run as well; `follow_up_execute_states` limits that.
+- **For stateful buttons (more than one state), the command's exit code always selects the new state**, and an unknown exit code goes to state `1` (error sink). There is no implicit cycling. `follow_up_state` (an int or `exit_code`) only decides whether the command of the resulting state is run as well; `follow_up_execute_states` limits that.
 - Validation in `config/load.py`: every button needs state `0`; stateful buttons also need state `1`; `affects_buttons` targets must exist, be stateful and have the **same set of state IDs** as the source button; button `id`s are unique strings.
 - `POST /set_state` (also accepted as `GET`) only changes the displayed state. It does **not** run the command and does not touch `affects_buttons`. `GET /get_current_state` and `GET /get_states` accept `id` or `x`+`y`.
 - The config is read once at startup; there is no reload.

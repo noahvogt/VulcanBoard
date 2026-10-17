@@ -19,13 +19,15 @@ VulcanBoard is built around a few powerful concepts that make it highly flexible
 
 - **Stateful & Stateless Buttons**: A button can have one or multiple states. A stateless button has only a single state (usually `id: 0`) and always executes the same command. A stateful button has multiple states (e.g., `id: 0`, `id: 1`, `id: 2`), allowing it to toggle between different behaviors.
 - **Dynamic Appearance**: Each state of a button can define its own `txt` (label), `cmd` (command to execute), `bg_color`, and `fg_color`. When the state changes, the button visually updates to reflect its new state.
-- **State Transitions via Exit Codes**: By default, VulcanBoard automatically cycles to the next state (or back to `0`) when a button is pressed. However, you can use `follow_up_state: exit_code` so that the executed command's exit code determines the new state of the button. This is incredibly useful for integrating with external scripts that check status (e.g., returning exit code `2` to switch the button to state `2`).
+- **Positions**: Buttons are placed with `position: [row, col]`, counted from `0` at the top left. The same `[row, col]` pairs are used in `affects_buttons` and as `x` (row) and `y` (column) in the HTTP API.
+- **State Transitions via Exit Codes**: For a stateful button, the exit code of the executed command determines the new state of the button (e.g., `exit 2` switches the button to state `2`). There is no implicit cycling, so a simple toggle uses commands like `exit 1` in state `0` and `exit 0` in state `1`. An exit code without a matching state switches the button to state `1`, the error sink state, which every stateful button must define. This is incredibly useful for integrating with external scripts that check status.
+- **Follow-up States**: With `follow_up_state` (a state id or `exit_code`), the command of the resulting state is executed right away as well. `follow_up_execute_states` limits this to a list of state ids. This is useful for status queries that run once and then show the result.
 - **Autostart**: Buttons can have `autostart: true`, meaning their default command is executed immediately when VulcanBoard launches. This is useful for fetching the initial status of external systems (like lights or projectors) and setting the button state accordingly.
-- **Affects Buttons**: A button can specify an `affects_buttons` array (a list of `[x, y]` coordinates). When pressed, it can force other buttons to update their states or trigger their commands, allowing you to create complex radio-button-like groups or master switches.
-- **HTTP API**: VulcanBoard exposes a local REST API (by default on port 8080) that allows external tools (like Home Assistant) to read and change button states. You can interact with the API using `x` and `y` coordinates or an optional unique `id` for each button.
+- **Affects Buttons**: A button can specify an `affects_buttons` array (a list of `[row, col]` positions). After its command has run, the affected buttons are switched to the same resulting state, which allows you to create radio-button-like groups or master switches. The affected buttons must be stateful and define the same state ids as the button itself.
+- **HTTP API**: VulcanBoard exposes a local REST API (by default on port 8080, configurable with `api_port`) that allows external tools (like Home Assistant) to read and change button states. You can address a button with `x` (row) and `y` (column) or with its optional unique `id`.
     - `GET /get_states?id=my_btn` (returns available states)
     - `GET /get_current_state?id=my_btn` (returns the current active state id)
-    - `POST /set_state?id=my_btn&state=2` (forces the button to change to state 2)
+    - `POST /set_state?id=my_btn&state=2` (changes the displayed state of the button to state 2; the command is not executed and `affects_buttons` is not applied)
 
 ## Installation
 
